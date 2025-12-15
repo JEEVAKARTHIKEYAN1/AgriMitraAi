@@ -17,8 +17,12 @@ class AgriAgent:
         # API Key Pool
         # You can add more keys here to distribute the load
         self.api_keys = [
-            
+            os.getenv('GOOGLE_API_KEY_1'),
+            os.getenv('GOOGLE_API_KEY_2'),
+            os.getenv('GOOGLE_API_KEY_3')
         ]
+        # Filter out None values
+        self.api_keys = [key for key in self.api_keys if key]
         self.current_key_index = 0
         self.model = None
         self._configure_current_key()
