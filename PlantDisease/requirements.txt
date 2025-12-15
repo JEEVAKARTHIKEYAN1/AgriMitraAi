@@ -11,3 +11,4 @@ accelerate
 scikit-learn
 numpy
 pandas
+gunicorn
