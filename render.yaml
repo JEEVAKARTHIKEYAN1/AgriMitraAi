@@ -5,7 +5,11 @@ services:
     buildCommand: pip install -r CropRecommendationSystem/requirements.txt
     startCommand: cd CropRecommendationSystem && gunicorn api:app
     envVars:
-      - key: GOOGLE_API_KEY
+      - key: GOOGLE_API_KEY_1
+        sync: false
+      - key: GOOGLE_API_KEY_2
+        sync: false
+      - key: GOOGLE_API_KEY_3
         sync: false
     plan: free
     autoDeploy: false
@@ -16,7 +20,11 @@ services:
     buildCommand: pip install -r PlantDisease/requirements.txt
     startCommand: cd PlantDisease && gunicorn app:app
     envVars:
-      - key: GOOGLE_API_KEY
+      - key: GOOGLE_API_KEY_1
+        sync: false
+      - key: GOOGLE_API_KEY_2
+        sync: false
+      - key: GOOGLE_API_KEY_3
         sync: false
     plan: free
     autoDeploy: false
