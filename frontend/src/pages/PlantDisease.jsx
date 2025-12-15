@@ -55,7 +55,7 @@ const PlantDisease = () => {
         formData.append('file', file);
 
         try {
-            const response = await axios.post('http://localhost:5001/predict', formData, {
+            const response = await axios.post(import.meta.env.VITE_PLANT_API_URL || 'http://localhost:5001/predict', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
@@ -193,7 +193,7 @@ const PlantDisease = () => {
                     {result && !loading && (
                         <ChatInterface
                             context={result}
-                            apiEndpoint="http://localhost:5001/chat"
+                            apiEndpoint={import.meta.env.VITE_PLANT_CHAT_URL || "http://localhost:5001/chat"}
                         />
                     )}
 

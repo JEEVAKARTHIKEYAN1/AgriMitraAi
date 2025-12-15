@@ -53,7 +53,7 @@ const CropRecommendation = () => {
         }
 
         try {
-            const response = await axios.post('http://localhost:5000/predict', payload);
+            const response = await axios.post(import.meta.env.VITE_CROP_API_URL || 'http://localhost:5000/predict', payload);
             setResult(response.data);
         } catch (err) {
             setError('Failed to get recommendation. Ensure the backend is running on port 5000.');

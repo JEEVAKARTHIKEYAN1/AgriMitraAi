@@ -3,7 +3,7 @@ import { Send, Bot, User, Loader2, Sparkles } from 'lucide-react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const ChatInterface = ({ context, apiEndpoint = 'http://localhost:5000/chat' }) => {
+const ChatInterface = ({ context, apiEndpoint = import.meta.env.VITE_CROP_CHAT_URL || 'http://localhost:5000/chat' }) => {
     const [messages, setMessages] = useState([
         {
             role: 'model',
