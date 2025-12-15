@@ -25,6 +25,27 @@ except FileNotFoundError as e:
 # Initialize the Agent
 agent = AgriAgent() # Will attempt to load GEMINI_API_KEY from env
 
+@app.route('/', methods=['GET'])
+def home():
+    return """
+    <html>
+        <head>
+            <title>AgriMitraAI - Crop Recommendation</title>
+            <style>
+                body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background-color: #f0fdf4; color: #166534; }
+                h1 { font-size: 2.5em; }
+                p { font-size: 1.2em; }
+                .status { padding: 10px 20px; background-color: #dcfce7; border-radius: 5px; display: inline-block; margin-top: 20px; }
+            </style>
+        </head>
+        <body>
+            <h1>🌾 Crop Recommendation Service</h1>
+            <p>API is Online and Ready.</p>
+            <div class="status">Status: <strong>Active</strong></div>
+        </body>
+    </html>
+    """
+
 @app.route('/predict', methods=['POST'])
 def predict():
     if not all([model, scaler, le]):

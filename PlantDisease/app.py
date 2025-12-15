@@ -81,7 +81,24 @@ CORS(app)
 
 @app.route("/")
 def home():
-    return jsonify({"message": "Plant Disease ViT API is running"})
+    return """
+    <html>
+        <head>
+            <title>AgriMitraAI - Plant Disease</title>
+            <style>
+                body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background-color: #ecfccb; color: #3f6212; }
+                h1 { font-size: 2.5em; }
+                p { font-size: 1.2em; }
+                .status { padding: 10px 20px; background-color: #d9f99d; border-radius: 5px; display: inline-block; margin-top: 20px; }
+            </style>
+        </head>
+        <body>
+            <h1>🍃 Plant Disease Analysis Service</h1>
+            <p>ViT Model is Loaded and API is Online.</p>
+            <div class="status">Status: <strong>Active</strong></div>
+        </body>
+    </html>
+    """
 
 
 @app.route("/predict", methods=["POST"])
