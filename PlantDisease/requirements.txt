@@ -1,0 +1,13 @@
+flask
+flask-cors
+torch
+torchvision
+transformers
+pillow
+python-dotenv
+google-generativeai
+evaluate
+accelerate
+scikit-learn
+numpy
+pandas
