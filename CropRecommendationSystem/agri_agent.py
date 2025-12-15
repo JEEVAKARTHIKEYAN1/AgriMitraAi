@@ -17,9 +17,7 @@ class AgriAgent:
         # API Key Pool
         # You can add more keys here to distribute the load
         self.api_keys = [
-            "AIzaSyDQDH8u0fL2mwoEe2P-kSs-uFvvOKW-CCI",  # Primary Key
-            "AIzaSyBwPYZVVLYv15GrD4HE0cTl84JhlbcOrt8", # Placeholder 1: REPLACE THIS
-            "AIzaSyAom-eptFZbqZ99CK9JOxKRixFMfTt5dbQ"  # Placeholder 2: REPLACE THIS
+            
         ]
         self.current_key_index = 0
         self.model = None
