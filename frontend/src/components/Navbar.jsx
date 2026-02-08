@@ -25,6 +25,7 @@ const Navbar = () => {
                     <NavLink to="/" active={isActive('/')}>Home</NavLink>
                     <NavLink to="/crop-recommendation" active={isActive('/crop-recommendation')}>Crop Recommend</NavLink>
                     <NavLink to="/plant-disease" active={isActive('/plant-disease')}>Plant Disease</NavLink>
+                    <NavLink to="/soil-testing" active={isActive('/soil-testing')}>Soil Testing</NavLink>
 
                     <button
                         onClick={toggleTheme}

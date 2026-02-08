@@ -3,6 +3,7 @@ import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import CropRecommendation from './pages/CropRecommendation';
 import PlantDisease from './pages/PlantDisease';
+import SoilTesting from './pages/SoilTesting';
 import { ThemeProvider } from './context/ThemeContext';
 
 function App() {
@@ -14,6 +15,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/crop-recommendation" element={<CropRecommendation />} />
           <Route path="/plant-disease" element={<PlantDisease />} />
+          <Route path="/soil-testing" element={<SoilTesting />} />
         </Routes>
       </div>
     </ThemeProvider>

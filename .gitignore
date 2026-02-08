@@ -7,7 +7,6 @@ __pycache__/
 env/
 venv/
 .env
-!frontend/.env
 .venv
 build/
 develop-eggs/
@@ -49,4 +48,3 @@ PlantDisease/vit-plant-disease-final/
 *.zip
 *.h5
 *.pth
-

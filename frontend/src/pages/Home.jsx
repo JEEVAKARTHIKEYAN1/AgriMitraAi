@@ -1,5 +1,5 @@
 import { useNavigate, Link } from 'react-router-dom';
-import { Sprout, Activity, ArrowRight, Leaf } from 'lucide-react';
+import { Sprout, Activity, ArrowRight, Leaf, FlaskConical } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Home = () => {
@@ -14,7 +14,7 @@ const Home = () => {
             <div className="fixed top-0 right-0 w-[500px] h-[500px] bg-secondary/30 dark:bg-primary/10 rounded-full blur-[100px] -z-10 opacity-50 pointer-events-none" />
             <div className="fixed bottom-0 left-0 w-[500px] h-[500px] bg-accent/20 dark:bg-yellow-500/5 rounded-full blur-[100px] -z-10 opacity-30 pointer-events-none" />
 
-            <header className="container mx-auto max-w-6xl text-center py-20 relative z-10">
+            <header className="container mx-auto max-w-6xl text-center pt-20 pb-4 relative z-10">
                 <motion.h1
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -46,7 +46,7 @@ const Home = () => {
             </header>
 
             {/* Features Section */}
-            <section className="container mx-auto max-w-6xl py-16">
+            <section className="container mx-auto max-w-6xl pt-4 pb-16">
                 <h2 className="text-4xl font-bold text-center mb-12 text-gray-900 dark:text-white">Our Solutions</h2>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                     <FeatureCard
@@ -63,7 +63,13 @@ const Home = () => {
                         link="/plant-disease"
                         delay={0.4}
                     />
-                    {/* Add more FeatureCards here if needed */}
+                    <FeatureCard
+                        icon={FlaskConical}
+                        title="Soil Testing"
+                        description="Analyze soil nutrients and get fertility insights with AI precision."
+                        link="/soil-testing"
+                        delay={0.5}
+                    />
                 </div>
             </section>
         </div>
