@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import ChatInterface from '../components/ChatInterface';
 
 const SoilTesting = () => {
     const [formData, setFormData] = useState({
@@ -91,132 +92,136 @@ const SoilTesting = () => {
     };
 
     return (
-        <div className="min-h-screen pt-20 pb-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-            >
-                <div className="text-center mb-10">
-                    <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-teal-700 mb-4">
-                        Soil Testing & Analysis
-                    </h1>
-                    <p className="text-xl text-gray-600 dark:text-gray-300">
-                        Advanced AI-driven soil health assessment for optimal crop yield.
-                    </p>
+        <div className="min-h-screen pt-24 pb-12 px-4 bg-[#F0F7F4] dark:bg-gray-900 transition-colors duration-300">
+            <div className="container mx-auto max-w-4xl">
+                <div className="text-center mb-12">
+                    <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Soil Testing & Analysis</h1>
+                    <p className="text-gray-600 dark:text-gray-400">Advanced AI-driven soil health assessment for optimal crop yield.</p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="grid lg:grid-cols-3 gap-8">
                     {/* Form Section */}
-                    <div className="md:col-span-2 bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 sm:p-8">
-                        <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2 text-gray-800 dark:text-white">
-                            📝 Enter Soil Matrix Data
-                        </h2>
+                    <div className="lg:col-span-2">
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-xl shadow-gray-100/50 dark:shadow-none border border-white/50 dark:border-gray-700 transition-all"
+                        >
+                            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-gray-800 dark:text-white pb-4 border-b border-gray-100 dark:border-gray-700">
+                                📝 Enter Soil Matrix Data
+                            </h2>
 
-                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <form onSubmit={handleSubmit} className="space-y-6">
+                                {/* Nutrient Grid */}
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                    {['N', 'P', 'K', 'pH', 'EC', 'OC', 'S', 'Zn', 'Fe', 'Cu', 'Mn', 'B'].map((field) => (
+                                        <div key={field}>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{field}</label>
+                                            <input
+                                                type="number"
+                                                step="any"
+                                                name={field}
+                                                value={formData[field]}
+                                                onChange={handleChange}
+                                                required
+                                                className="w-full px-4 py-3 bg-white dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary dark:focus:border-primary outline-none transition-all text-gray-900 dark:text-gray-100 placeholder-gray-400"
+                                                placeholder="0.0"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
 
-                            {/* Nutrient Grid */}
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                {['N', 'P', 'K', 'pH', 'EC', 'OC', 'S', 'Zn', 'Fe', 'Cu', 'Mn', 'B'].map((field) => (
-                                    <div key={field}>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{field}</label>
-                                        <input
-                                            type="number"
-                                            step="any"
-                                            name={field}
-                                            value={formData[field]}
-                                            onChange={handleChange}
-                                            required
-                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all"
-                                            placeholder="0.0"
-                                        />
-                                    </div>
-                                ))}
-                            </div>
+                                {/* Environmental Grid */}
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-gray-100 dark:border-gray-700 pt-6">
+                                    {['Moisture', 'Annual_Rainfall', 'Temperature'].map((field) => (
+                                        <div key={field}>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{field.replace('_', ' ')}</label>
+                                            <input
+                                                type="number"
+                                                step="any"
+                                                name={field}
+                                                value={formData[field]}
+                                                onChange={handleChange}
+                                                required
+                                                className="w-full px-4 py-3 bg-white dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary dark:focus:border-primary outline-none transition-all text-gray-900 dark:text-gray-100 placeholder-gray-400"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
 
-                            {/* Environmental Grid */}
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t pt-4 dark:border-gray-700">
-                                {['Moisture', 'Annual_Rainfall', 'Temperature'].map((field) => (
-                                    <div key={field}>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{field.replace('_', ' ')}</label>
-                                        <input
-                                            type="number"
-                                            step="any"
-                                            name={field}
-                                            value={formData[field]}
-                                            onChange={handleChange}
-                                            required
-                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all"
-                                        />
-                                    </div>
-                                ))}
-                            </div>
+                                <motion.button
+                                    whileHover={{ scale: 1.01 }}
+                                    whileTap={{ scale: 0.99 }}
+                                    type="submit"
+                                    disabled={loading}
+                                    className="w-full py-4 bg-primary text-white rounded-xl font-semibold shadow-lg shadow-primary/30 hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-8"
+                                >
+                                    {loading ? 'Analyzing Soil...' : 'Analyze Soil Health'}
+                                </motion.button>
+                            </form>
+                        </motion.div>
 
-                            <motion.button
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                type="submit"
-                                disabled={loading}
-                                className={`w-full py-4 text-lg font-bold text-white rounded-xl shadow-lg transition-all ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700'
-                                    }`}
-                            >
-                                {loading ? 'Analyzing Soil...' : 'Analyze Soil Health'}
-                            </motion.button>
-                        </form>
+                        {/* Chatbot Integration - Only show when we have a result */}
+                        {result && !loading && (
+                            <ChatInterface
+                                context={{ ...result, prediction: getStatusText(result.prediction), input_params: formData }}
+                                apiEndpoint="http://localhost:5002/chat"
+                            />
+                        )}
                     </div>
 
                     {/* Result Section */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 sm:p-8 flex flex-col items-center justify-center text-center">
+                    <div className="lg:col-span-1">
                         {result ? (
                             <motion.div
-                                initial={{ scale: 0.8, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                className="space-y-6 w-full"
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-xl border-t-8 border-primary sticky top-24 transition-colors"
                             >
-                                <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
-                                    <span className="text-4xl">🌱</span>
-                                </div>
+                                <div className="flex flex-col items-center text-center space-y-6">
+                                    <div className="w-20 h-20 bg-green-100 dark:bg-primary/20 rounded-full flex items-center justify-center text-primary">
+                                        <span className="text-4xl">🌱</span>
+                                    </div>
 
-                                <h3 className="text-xl font-bold text-gray-800 dark:text-white border-b pb-2">Analysis Report</h3>
+                                    <div>
+                                        <h3 className="text-gray-500 dark:text-gray-400 font-medium mb-1 uppercase tracking-wider text-xs">Soil Status</h3>
+                                        <h2 className="text-2xl font-bold text-gray-800 dark:text-white">{getStatusText(result.prediction)}</h2>
+                                    </div>
 
-                                {/* Primary Prediction */}
-                                <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl border border-emerald-200 dark:border-emerald-700">
-                                    <span className="text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">Soil Status</span>
-                                    <div className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">
-                                        {getStatusText(result.prediction)}
+                                    <div className="w-full pt-6 border-t border-gray-100 dark:border-gray-700 space-y-4">
+                                        <div className="flex justify-between items-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+                                            <span className="text-sm text-gray-600 dark:text-gray-400">Soil Type</span>
+                                            <span className="font-bold text-blue-700 dark:text-blue-400">{result.soil_type}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl">
+                                            <span className="text-sm text-gray-600 dark:text-gray-400">Fertility</span>
+                                            <span className="font-bold text-amber-700 dark:text-amber-400">{result.fertility}</span>
+                                        </div>
                                     </div>
                                 </div>
-
-                                {/* Secondary AI Insights */}
-                                <div className="grid grid-cols-2 gap-3 text-left">
-                                    <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-100 dark:border-blue-800">
-                                        <span className="text-xs text-blue-600 dark:text-blue-300 block mb-1">Soil Type</span>
-                                        <span className="font-bold text-gray-800 dark:text-white">{result.soil_type}</span>
-                                    </div>
-                                    <div className="p-3 bg-amber-50 dark:bg-amber-900/30 rounded-lg border border-amber-100 dark:border-amber-800">
-                                        <span className="text-xs text-amber-600 dark:text-amber-300 block mb-1">Fertility Level</span>
-                                        <span className="font-bold text-gray-800 dark:text-white">{result.fertility}</span>
-                                    </div>
-                                </div>
-
                             </motion.div>
                         ) : (
-                            <div className="text-gray-400">
-                                <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <span className="text-3xl">🔍</span>
+                            !error && !loading && (
+                                <div className="bg-white/50 dark:bg-gray-800/50 border border-dashed border-gray-300 dark:border-gray-600 rounded-3xl p-8 text-center text-gray-400 dark:text-gray-500 h-64 flex flex-col items-center justify-center transition-colors">
+                                    <span className="text-4xl mb-4 opacity-50">🔍</span>
+                                    <p>Results will appear here</p>
                                 </div>
-                                <p>Fill out the form to let our AI analyze soil composition.</p>
-                            </div>
+                            )
                         )}
 
                         {error && (
-                            <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg w-full text-sm">
-                                ❌ {error}
-                            </div>
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-6 rounded-2xl border border-red-100 dark:border-red-800 flex items-start gap-3 mt-6"
+                            >
+                                <span className="text-xl">❌</span>
+                                <p className="text-sm">{error}</p>
+                            </motion.div>
                         )}
                     </div>
                 </div>
-            </motion.div>
+            </div>
         </div>
     );
 };

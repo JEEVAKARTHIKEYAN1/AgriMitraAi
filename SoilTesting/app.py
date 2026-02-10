@@ -88,5 +88,35 @@ def predict_soil():
         print(f"Prediction Error: {e}")
         return jsonify({'error': f"Processing failed: {str(e)}"}), 500
 
+
+# -----------------------------
+# CHATBOT ENDPOINT
+# -----------------------------
+from soil_agent import SoilAgent
+agent = SoilAgent()
+
+@app.route("/chat", methods=["POST"])
+def chat():
+    """
+    Chat endpoint for Soil Testing Advisory.
+    Input: { "message": "...", "context": {...}, "history": [...] }
+    """
+    data = request.get_json()
+    
+    user_message = data.get('message', '')
+    context = data.get('context', {})
+    history = data.get('history', [])
+    
+    if not user_message:
+        return jsonify({'error': 'Message cannot be empty'}), 400
+        
+    try:
+        reply = agent.generate_response(user_message, context, history)
+        return jsonify({'reply': reply})
+    except Exception as e:
+        print(f"Chat Error: {e}")
+        return jsonify({'error': 'Internal Server Error'}), 500
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5002, debug=True)
