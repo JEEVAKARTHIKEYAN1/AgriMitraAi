@@ -1,32 +1,59 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
+
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, JSONResponse
+from pydantic import BaseModel
 import joblib
 import numpy as np
 import logging
+import uvicorn
 from agri_agent import AgriAgent
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+app = FastAPI(title="AgriMitraAI - Crop Recommendation")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Load the model, scaler, and label encoder
 try:
     model = joblib.load('model.pkl')
     scaler = joblib.load('scaler.pkl')
     le = joblib.load('label_encoder.pkl')
+    MODELS_LOADED = True
 except FileNotFoundError as e:
-    print(f"Error loading model files: {e}")
-    # Handle the error appropriately, maybe exit or return an error state
+    logger.error(f"Error loading model files: {e}")
+    MODELS_LOADED = False
     model = scaler = le = None
 
 # Initialize the Agent
-agent = AgriAgent() # Will attempt to load GEMINI_API_KEY from env
+agent = AgriAgent()
 
-@app.route('/', methods=['GET'])
-def home():
+# Pydantic Models for Input Validation
+class CropInput(BaseModel):
+    N: float
+    P: float
+    K: float
+    temperature: float
+    humidity: float
+    ph: float
+    rainfall: float
+
+class ChatInput(BaseModel):
+    message: str
+    context: dict = {}
+    history: list = []
+
+@app.get("/", response_class=HTMLResponse)
+async def home():
     return """
     <html>
         <head>
@@ -40,78 +67,65 @@ def home():
         </head>
         <body>
             <h1>🌾 Crop Recommendation Service</h1>
-            <p>API is Online and Ready.</p>
+            <p>Fail-safe API is Online and Ready (FastAPI).</p>
             <div class="status">Status: <strong>Active</strong></div>
+            <p><a href="/docs">View API Documentation</a></p>
         </body>
     </html>
     """
 
-@app.route('/predict', methods=['POST'])
-def predict():
-    if not all([model, scaler, le]):
-        return jsonify({'error': 'Model files not loaded. Check server logs.'}), 500
+@app.post("/predict")
+async def predict(data: CropInput):
+    if not MODELS_LOADED:
+        raise HTTPException(status_code=500, detail="Model files not loaded. Check server logs.")
 
-    data = request.get_json()
-    
     try:
-        # Extract features from the request
+        # Extract features from the pydantic model
         features = [
-            data['N'],
-            data['P'],
-            data['K'],
-            data['temperature'],
-            data['humidity'],
-            data['ph'],
-            data['rainfall']
+            data.N,
+            data.P,
+            data.K,
+            data.temperature,
+            data.humidity,
+            data.ph,
+            data.rainfall
         ]
-    except KeyError as e:
-        return jsonify({'error': f'Missing feature in request: {e}'}), 400
+        
+        # Prepare input for the model
+        input_data = np.array([features])
+        input_scaled = scaler.transform(input_data)
+        
+        # Make prediction
+        prediction_idx = model.predict(input_scaled)[0]
+        crop = le.inverse_transform([prediction_idx])[0]
+        
+        # Get prediction probabilities
+        probs = model.predict_proba(input_scaled)[0]
+        confidence = np.max(probs) * 100
+        
+        return {
+            'recommended_crop': crop,
+            'confidence': f'{confidence:.2f}%'
+        }
+        
+    except Exception as e:
+        logger.error(f"Prediction Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-    # Prepare input for the model
-    input_data = np.array([features])
-    input_scaled = scaler.transform(input_data)
-    
-    # Make prediction
-    prediction_idx = model.predict(input_scaled)[0]
-    crop = le.inverse_transform([prediction_idx])[0]
-    
-    # Get prediction probabilities
-    probs = model.predict_proba(input_scaled)[0]
-    confidence = np.max(probs) * 100
-    
-    response = {
-        'recommended_crop': crop,
-        'confidence': f'{confidence:.2f}%'
-    }
-    
-    return jsonify(response)
-
-@app.route('/chat', methods=['POST'])
-def chat():
+@app.post("/chat")
+async def chat(data: ChatInput):
     """
     Chat endpoint for the AgriMitraAI Agent.
-    Expects JSON:
-    {
-        "message": "User question",
-        "context": { ... prediction data ... },
-        "history": [ {"role": "user", "content": "..."}, ... ]
-    }
     """
-    data = request.get_json()
-    
-    user_message = data.get('message', '')
-    context = data.get('context', {})
-    history = data.get('history', [])
-    
-    if not user_message:
-        return jsonify({'error': 'Message cannot be empty'}), 400
+    if not data.message:
+        raise HTTPException(status_code=400, detail="Message cannot be empty")
         
     try:
-        reply = agent.generate_response(user_message, context, history)
-        return jsonify({'reply': reply})
+        reply = agent.generate_response(data.message, data.context, data.history)
+        return {'reply': reply}
     except Exception as e:
         logger.error(f"Chat Endpoint Error: {e}")
-        return jsonify({'error': 'Internal Server Error'}), 500
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    uvicorn.run(app, host="0.0.0.0", port=5000)

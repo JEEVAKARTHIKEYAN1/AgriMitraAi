@@ -1,11 +1,23 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
+
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 import pandas as pd
 import joblib
 import numpy as np
+import uvicorn
+from soil_agent import SoilAgent
 
-app = Flask(__name__)
-CORS(app)
+app = FastAPI(title="AgriMitraAI - Soil Testing")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # =====================================================
 # 1. LOAD ARTIFACTS
@@ -38,34 +50,52 @@ def get_fertility_from_output(output_class):
     }
     return mapping.get(int(output_class), "Unknown")
 
-@app.route('/predict_soil', methods=['POST'])
-def predict_soil():
+# initialize agent
+agent = SoilAgent()
+
+# Pydantic Models for Input Validation
+class SoilInput(BaseModel):
+    N: float = 0.0
+    P: float = 0.0
+    K: float = 0.0
+    pH: float = 0.0
+    EC: float = 0.0
+    OC: float = 0.0
+    S: float = 0.0
+    Zn: float = 0.0
+    Fe: float = 0.0
+    Cu: float = 0.0
+    Mn: float = 0.0
+    B: float = 0.0
+    Moisture: float = 0.0
+    Annual_Rainfall: float = 0.0
+    Temperature: float = 0.0
+
+class ChatInput(BaseModel):
+    message: str
+    context: dict = {}
+    history: list = []
+
+@app.post('/predict_soil')
+async def predict_soil(data: SoilInput):
     if not MODELS_LOADED:
-        return jsonify({'error': 'Models not loaded. Check server logs.'}), 500
+        raise HTTPException(status_code=500, detail="Models not loaded. Check server logs.")
 
     try:
-        data = request.get_json()
-        if not data:
-            return jsonify({'error': 'No input data provided'}), 400
-        
         # 1. Prepare Input DataFrame
         # Ensure we only have the expected columns in the right order
-        # Handle None values using (x or 0) logic
         input_data = {}
+        input_dict = data.dict()
+        
         for col in feature_cols:
-            val = data.get(col)
-            # If val is None or empty string, default to 0.0. otherwise float
-            try:
-                input_data[col] = float(val) if val is not None and val != "" else 0.0
-            except ValueError:
-                input_data[col] = 0.0
+             input_data[col] = input_dict.get(col, 0.0)
 
         input_df = pd.DataFrame([input_data])
         
         # 2. Scale Features
         # Check for NaNs
         if input_df.isnull().values.any():
-             return jsonify({'error': 'Input contains NaN values'}), 400
+             raise HTTPException(status_code=400, detail="Input contains NaN values")
 
         input_scaled = scaler.transform(input_df)
         
@@ -78,45 +108,31 @@ def predict_soil():
         # 5. Determine Fertility (Derived from Output)
         fertility = get_fertility_from_output(pred_output)
         
-        return jsonify({
+        return {
             'prediction': int(pred_output),
             'soil_type': str(pred_type),
             'fertility': fertility
-        })
+        }
 
     except Exception as e:
         print(f"Prediction Error: {e}")
-        return jsonify({'error': f"Processing failed: {str(e)}"}), 500
+        raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
 
-
-# -----------------------------
-# CHATBOT ENDPOINT
-# -----------------------------
-from soil_agent import SoilAgent
-agent = SoilAgent()
-
-@app.route("/chat", methods=["POST"])
-def chat():
+@app.post("/chat")
+async def chat(data: ChatInput):
     """
     Chat endpoint for Soil Testing Advisory.
     Input: { "message": "...", "context": {...}, "history": [...] }
     """
-    data = request.get_json()
-    
-    user_message = data.get('message', '')
-    context = data.get('context', {})
-    history = data.get('history', [])
-    
-    if not user_message:
-        return jsonify({'error': 'Message cannot be empty'}), 400
+    if not data.message:
+        raise HTTPException(status_code=400, detail="Message cannot be empty")
         
     try:
-        reply = agent.generate_response(user_message, context, history)
-        return jsonify({'reply': reply})
+        reply = agent.generate_response(data.message, data.context, data.history)
+        return {'reply': reply}
     except Exception as e:
         print(f"Chat Error: {e}")
-        return jsonify({'error': 'Internal Server Error'}), 500
-
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5002, debug=True)
+    uvicorn.run(app, host="0.0.0.0", port=5002)

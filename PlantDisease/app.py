@@ -1,9 +1,19 @@
+
 import io
 from PIL import Image
 import torch
 from transformers import ViTForImageClassification, ViTImageProcessor
-from flask import Flask, request, jsonify
-from flask_cors import CORS
+from fastapi import FastAPI, UploadFile, File, HTTPException, Form
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, JSONResponse
+from pydantic import BaseModel
+import logging
+import uvicorn
+from plant_agent import PlantAgent
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # -----------------------------
 # CONFIG
@@ -16,13 +26,16 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # LOAD MODEL
 # -----------------------------
 print("Loading ViT model...")
-model = ViTForImageClassification.from_pretrained(MODEL_DIR)
-processor = ViTImageProcessor.from_pretrained(MODEL_DIR)
-model.to(device)
-model.eval()
-
-print("Model loaded successfully!")
-
+try:
+    model = ViTForImageClassification.from_pretrained(MODEL_DIR)
+    processor = ViTImageProcessor.from_pretrained(MODEL_DIR)
+    model.to(device)
+    model.eval()
+    print("Model loaded successfully!")
+    MODELS_LOADED = True
+except Exception as e:
+    print(f"Error loading model: {e}")
+    MODELS_LOADED = False
 
 # -----------------------------
 # LABEL CLEANER FUNCTION
@@ -73,14 +86,28 @@ def predict_image_pil(pil_image: Image.Image) -> str:
 
 
 # -----------------------------
-# FLASK APP
+# FASTAPI APP
 # -----------------------------
-app = Flask(__name__)
-CORS(app)
+app = FastAPI(title="AgriMitraAI - Plant Disease")
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.route("/")
-def home():
+# Initialize Agent
+agent = PlantAgent()
+
+class ChatInput(BaseModel):
+    message: str
+    context: dict = {}
+    history: list = []
+
+@app.get("/", response_class=HTMLResponse)
+async def home():
     return """
     <html>
         <head>
@@ -94,73 +121,60 @@ def home():
         </head>
         <body>
             <h1>🍃 Plant Disease Analysis Service</h1>
-            <p>ViT Model is Loaded and API is Online.</p>
+            <p>ViT Model is Loaded and API is Online (FastAPI).</p>
             <div class="status">Status: <strong>Active</strong></div>
+             <p><a href="/docs">View API Documentation</a></p>
         </body>
     </html>
     """
 
 
-@app.route("/predict", methods=["POST"])
-def predict():
+@app.post("/predict")
+async def predict(file: UploadFile = File(...)):
     """
     Accepts: multipart/form-data with key 'file'
     Returns: { 'prediction': '<disease name>' }
     """
+    if not MODELS_LOADED:
+        raise HTTPException(status_code=500, detail="Model not loaded")
 
-    if "file" not in request.files:
-        return jsonify({"error": "No file uploaded. Use key 'file'."}), 400
-
-    file = request.files["file"]
-
-    if file.filename == "":
-        return jsonify({"error": "Empty file uploaded."}), 400
+    if not file:
+        raise HTTPException(status_code=400, detail="No file uploaded")
 
     try:
-        image_bytes = file.read()
-        pil_img = Image.open(io.BytesIO(image_bytes))
+        contents = await file.read()
+        pil_img = Image.open(io.BytesIO(contents))
 
         prediction = predict_image_pil(pil_img)
 
-        return jsonify({
+        return {
             "prediction": prediction
-        }), 200
+        }
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        logger.error(f"Prediction Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-# -----------------------------
-# CHATBOT ENDPOINT
-# -----------------------------
-from plant_agent import PlantAgent
-agent = PlantAgent()
-
-@app.route("/chat", methods=["POST"])
-def chat():
+@app.post("/chat")
+async def chat(data: ChatInput):
     """
     Chat endpoint for Plant Disease Advisory.
     Input: { "message": "...", "context": {...}, "history": [...] }
     """
-    data = request.get_json()
-    
-    user_message = data.get('message', '')
-    context = data.get('context', {})
-    history = data.get('history', [])
-    
-    if not user_message:
-        return jsonify({'error': 'Message cannot be empty'}), 400
+    if not data.message:
+        raise HTTPException(status_code=400, detail="Message cannot be empty")
         
     try:
-        reply = agent.generate_response(user_message, context, history)
-        return jsonify({'reply': reply})
+        reply = agent.generate_response(data.message, data.context, data.history)
+        return {'reply': reply}
     except Exception as e:
-        print(f"Chat Error: {e}")
-        return jsonify({'error': 'Internal Server Error'}), 500
+        logger.error(f"Chat Error: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 # -----------------------------
 # RUN APP
 # -----------------------------
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5001, debug=True)
+    uvicorn.run(app, host="0.0.0.0", port=5001)
