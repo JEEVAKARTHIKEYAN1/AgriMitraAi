@@ -1,5 +1,5 @@
 import { useNavigate, Link } from 'react-router-dom';
-import { Sprout, Activity, ArrowRight, Leaf, FlaskConical } from 'lucide-react';
+import { Sprout, Activity, ArrowRight, Leaf, FlaskConical, CalendarDays } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Home = () => {
@@ -48,7 +48,7 @@ const Home = () => {
             {/* Features Section */}
             <section className="container mx-auto max-w-6xl pt-4 pb-16">
                 <h2 className="text-4xl font-bold text-center mb-12 text-gray-900 dark:text-white">Our Solutions</h2>
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
                     <FeatureCard
                         icon={Sprout}
                         title="Crop Recommendation"
@@ -69,6 +69,13 @@ const Home = () => {
                         description="Analyze soil nutrients and get fertility insights with AI precision."
                         link="/soil-testing"
                         delay={0.5}
+                    />
+                    <FeatureCard
+                        icon={CalendarDays}
+                        title="Smart Calendar"
+                        description="AI-powered farming schedules and task management for optimal crop planning."
+                        link="/smart-calendar"
+                        delay={0.6}
                     />
                 </div>
             </section>

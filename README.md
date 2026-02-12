@@ -31,6 +31,15 @@ Comprehensive soil health assessment module:
   - **Fertility Level**: Automatically determined
 - **AI Chatbot**: Get soil improvement recommendations
 
+### 4. 📅 Smart Farming Calendar
+AI-powered farming schedule and task management:
+- **AI Schedule Generation**: Automatically create comprehensive farming calendars for any crop
+- **Task Management**: Add, edit, delete, and track farming tasks
+- **Interactive Calendar**: Visual calendar interface with task indicators
+- **Category System**: Organize tasks by type (planting, irrigation, fertilization, pest control, etc.)
+- **Priority Levels**: Set task priorities (high, medium, low)
+- **AI Chatbot**: Get advice on farming schedules and optimal timing
+
 ---
 
 ## 🛠️ Tech Stack
@@ -148,6 +157,28 @@ API Docs: `http://localhost:5002/docs`
 
 ---
 
+#### D. Smart Farming Calendar (Port 5003)
+```bash
+cd SmartCalendar
+```
+
+Create `.env` file:
+```env
+GOOGLE_API_KEY_1=your_first_api_key
+GOOGLE_API_KEY_2=your_second_api_key
+GOOGLE_API_KEY_3=your_third_api_key
+```
+
+Run the service:
+```bash
+python app.py
+```
+
+Access at: `http://localhost:5003`  
+API Docs: `http://localhost:5003/docs`
+
+---
+
 ### 3. Frontend Setup
 ```bash
 cd frontend
@@ -163,7 +194,7 @@ Access at: `http://localhost:5173`
 
 ### Running All Services
 
-Open **4 separate terminal windows**:
+Open **5 separate terminal windows**:
 
 **Terminal 1 - Crop Recommendation:**
 ```bash
@@ -183,7 +214,13 @@ cd SoilTesting
 python app.py
 ```
 
-**Terminal 4 - Frontend:**
+**Terminal 4 - Smart Calendar:**
+```bash
+cd SmartCalendar
+python app.py
+```
+
+**Terminal 5 - Frontend:**
 ```bash
 cd frontend
 npm run dev
@@ -219,6 +256,11 @@ AgriMitraAI/
 │   ├── scaler.pkl                # Feature scaler
 │   └── .env                      # API keys
 │
+├── SmartCalendar/
+│   ├── app.py                    # FastAPI app
+│   ├── calendar_agent.py         # Gemini chatbot agent
+│   └── .env                      # API keys
+│
 └── frontend/
     ├── src/
     │   ├── pages/                # React pages
@@ -247,6 +289,16 @@ AgriMitraAI/
 - `GET /` - Service status page
 - `POST /predict_soil` - Analyze soil parameters
 - `POST /chat` - Chat with AI agent
+- `GET /docs` - Interactive API documentation
+
+### Smart Calendar (Port 5003)
+- `GET /` - Service status page
+- `POST /generate_schedule` - Generate AI farming schedule for a crop
+- `POST /add_task` - Add custom farming task
+- `GET /tasks` - Retrieve tasks for a date range
+- `PUT /update_task/{task_id}` - Update task status/details
+- `DELETE /delete_task/{task_id}` - Delete a task
+- `POST /chat` - Chat with calendar AI agent
 - `GET /docs` - Interactive API documentation
 
 ---

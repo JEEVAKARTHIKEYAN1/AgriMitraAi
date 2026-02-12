@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import CropRecommendation from './pages/CropRecommendation';
 import PlantDisease from './pages/PlantDisease';
 import SoilTesting from './pages/SoilTesting';
+import SmartCalendar from './pages/SmartCalendar';
 import { ThemeProvider } from './context/ThemeContext';
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
           <Route path="/crop-recommendation" element={<CropRecommendation />} />
           <Route path="/plant-disease" element={<PlantDisease />} />
           <Route path="/soil-testing" element={<SoilTesting />} />
+          <Route path="/smart-calendar" element={<SmartCalendar />} />
         </Routes>
       </div>
     </ThemeProvider>
