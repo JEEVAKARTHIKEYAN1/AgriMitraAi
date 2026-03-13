@@ -29,6 +29,9 @@ const SmartCalendar = () => {
         planting_date: ''
     });
 
+    const [selectedCropId, setSelectedCropId] = useState('all');
+    const [crops, setCrops] = useState([]);
+
     const [chatMessages, setChatMessages] = useState([]);
     const [chatInput, setChatInput] = useState('');
 
@@ -47,6 +50,30 @@ const SmartCalendar = () => {
         fetchTasks();
         checkAiStatus();
     }, []);
+
+    useEffect(() => {
+        // Extract unique crops from tasks
+        const uniqueCrops = [];
+        const seen = new Set();
+        tasks.forEach(task => {
+            if (task.crop_id && !seen.has(task.crop_id)) {
+                seen.add(task.crop_id);
+                uniqueCrops.push({
+                    id: task.crop_id,
+                    name: task.crop_name || 'Custom',
+                    progress: calculateProgress(task.crop_id)
+                });
+            }
+        });
+        setCrops(uniqueCrops);
+    }, [tasks]);
+
+    const calculateProgress = (cropId) => {
+        const cropTasks = tasks.filter(t => t.crop_id === cropId);
+        if (cropTasks.length === 0) return 0;
+        const completed = cropTasks.filter(t => t.completed).length;
+        return Math.round((completed / cropTasks.length) * 100);
+    };
 
     const fetchTasks = async () => {
         try {
@@ -89,6 +116,7 @@ const SmartCalendar = () => {
                 await fetchTasks();
                 setShowScheduleGen(false);
                 setScheduleForm({ crop: '', location: '', planting_date: '' });
+                setSelectedCropId(data.crop_id);
                 alert(`Successfully generated ${data.tasks.length} tasks for ${data.crop}!`);
             } else {
                 alert(`Failed to generate schedule: ${data.detail || 'Unknown error'}`);
@@ -107,12 +135,18 @@ const SmartCalendar = () => {
             return;
         }
 
+        const taskData = {
+            ...newTask,
+            crop_id: selectedCropId === 'all' ? 'manual' : selectedCropId,
+            crop_name: selectedCropId === 'all' ? 'Custom' : crops.find(c => c.id === selectedCropId)?.name || 'Custom'
+        };
+
         setLoading(true);
         try {
             const response = await fetch('http://localhost:5004/add_task', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newTask)
+                body: JSON.stringify(taskData)
             });
 
             if (response.ok) {
@@ -155,16 +189,80 @@ const SmartCalendar = () => {
                 method: 'DELETE'
             });
 
+            const data = await response.json();
+
             if (response.ok) {
                 await fetchTasks();
+                if (data.is_critical) {
+                    if (confirm(`${data.warning}\n\nWould you like to regenerate the schedule for this crop to ensure consistency?`)) {
+                        const crop = crops.find(c => c.id === data.crop_id);
+                        if (crop) {
+                            setScheduleForm({
+                                crop: crop.name,
+                                location: tasks.find(t => t.crop_id === crop.id)?.location || '',
+                                planting_date: new Date().toISOString().split('T')[0]
+                            });
+                            setShowScheduleGen(true);
+                        }
+                    }
+                }
             }
         } catch (error) {
             console.error('Error deleting task:', error);
         }
     };
 
+    const deleteCrop = async (cropId) => {
+        if (!confirm('Are you sure you want to delete this entire crop schedule? All tasks will be permanently removed.')) return;
+
+        try {
+            const response = await fetch(`http://localhost:5004/delete_crop/${cropId}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                await fetchTasks();
+                if (selectedCropId === cropId) setSelectedCropId('all');
+                alert('Crop schedule deleted successfully');
+            }
+        } catch (error) {
+            console.error('Error deleting crop:', error);
+        }
+    };
+
+    const renameCrop = async (cropId, currentName) => {
+        const newName = prompt('Enter new name for this crop:', currentName);
+        if (!newName || newName === currentName) return;
+
+        try {
+            const response = await fetch(`http://localhost:5004/rename_crop/${cropId}?new_name=${encodeURIComponent(newName)}`, {
+                method: 'PUT'
+            });
+
+            if (response.ok) {
+                await fetchTasks();
+            }
+        } catch (error) {
+            console.error('Error renaming crop:', error);
+        }
+    };
+
     const toggleTaskComplete = async (task) => {
         await updateTask(task.id, { completed: !task.completed });
+    };
+
+    const handleTaskChat = (task) => {
+        const initialGreeting = `Hello! I'm here to help you with the task: **${task.title}** for your **${task.crop_name}** schedule. 
+
+Details:
+- Phase: ${task.phase || 'N/A'}
+- Priority: ${task.priority}
+- Description: ${task.description || 'No additional details provided.'}
+
+What would you like to know about this specific activity?`;
+
+        setChatMessages([{ role: 'assistant', content: initialGreeting }]);
+        setShowChat(true);
     };
 
     const sendChatMessage = async () => {
@@ -181,7 +279,10 @@ const SmartCalendar = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     message: chatInput,
-                    context: { current_date: new Date().toISOString().split('T')[0] },
+                    context: {
+                        current_date: new Date().toISOString().split('T')[0],
+                        selected_crop: selectedCropId !== 'all' ? crops.find(c => c.id === selectedCropId)?.name : 'General'
+                    },
                     history: chatMessages
                 })
             });
@@ -209,11 +310,19 @@ const SmartCalendar = () => {
 
     const getTasksForDate = (date) => {
         const dateStr = date.toISOString().split('T')[0];
-        return tasks.filter(task => task.date === dateStr);
+        let filtered = tasks.filter(task => task.date === dateStr);
+        if (selectedCropId !== 'all') {
+            filtered = filtered.filter(task => task.crop_id === selectedCropId);
+        }
+        return filtered;
     };
 
     const getSortedTasks = () => {
-        return [...tasks].sort((a, b) => new Date(a.date) - new Date(b.date));
+        let filtered = [...tasks];
+        if (selectedCropId !== 'all') {
+            filtered = filtered.filter(task => task.crop_id === selectedCropId);
+        }
+        return filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
     };
 
     const renderCalendar = () => {
@@ -329,6 +438,72 @@ const SmartCalendar = () => {
                         </button>
                     </div>
 
+                    {/* Crop Selector & Progress */}
+                    {crops.length > 0 && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                            <motion.div
+                                whileHover={{ scale: 1.02 }}
+                                onClick={() => setSelectedCropId('all')}
+                                className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${selectedCropId === 'all'
+                                    ? 'border-primary bg-primary/5 shadow-md'
+                                    : 'border-transparent bg-white dark:bg-gray-800 shadow-sm'
+                                    }`}
+                            >
+                                <div className="flex justify-between items-center mb-2">
+                                    <h3 className="font-bold text-lg">All Crops</h3>
+                                    <span className="text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-md">{tasks.length} Tasks</span>
+                                </div>
+                                <div className="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full overflow-hidden">
+                                    <div
+                                        className="bg-primary h-full transition-all duration-1000"
+                                        style={{ width: `${Math.round((tasks.filter(t => t.completed).length / tasks.length) * 100 || 0)}%` }}
+                                    />
+                                </div>
+                            </motion.div>
+
+                            {crops.map(crop => (
+                                <motion.div
+                                    key={crop.id}
+                                    whileHover={{ scale: 1.02 }}
+                                    onClick={() => setSelectedCropId(crop.id)}
+                                    className={`p-4 rounded-xl border-2 cursor-pointer group transition-all ${selectedCropId === crop.id
+                                        ? 'border-primary bg-primary/5 shadow-md'
+                                        : 'border-transparent bg-white dark:bg-gray-800 shadow-sm'
+                                        }`}
+                                >
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-bold text-lg truncate">{crop.name}</h3>
+                                            <div className="flex gap-2 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); renameCrop(crop.id, crop.name); }}
+                                                    className="p-1 hover:bg-blue-100 dark:hover:bg-blue-900 rounded text-blue-600 dark:text-blue-400"
+                                                    title="Rename Crop"
+                                                >
+                                                    <Edit2 className="w-3.5 h-3.5" />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); deleteCrop(crop.id); }}
+                                                    className="p-1 hover:bg-red-100 dark:hover:bg-red-900 rounded text-red-600 dark:text-red-400"
+                                                    title="Delete Crop"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <span className="text-sm bg-green-100 dark:bg-green-900/30 text-green-600 px-2 py-1 rounded-md shrink-0">{crop.progress}%</span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full overflow-hidden">
+                                        <div
+                                            className="bg-green-500 h-full transition-all duration-1000"
+                                            style={{ width: `${crop.progress}%` }}
+                                        />
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    )}
+
                     <div className="flex items-center justify-between mb-6 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg">
                         <button
                             onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))}
@@ -338,6 +513,11 @@ const SmartCalendar = () => {
                         </button>
                         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                             {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                            {selectedCropId !== 'all' && (
+                                <span className="ml-3 text-primary text-lg font-medium">
+                                    • {crops.find(c => c.id === selectedCropId)?.name}
+                                </span>
+                            )}
                         </h2>
                         <button
                             onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))}
@@ -394,6 +574,7 @@ const SmartCalendar = () => {
                                         categories={categories}
                                         onEdit={setEditingTask}
                                         onDelete={deleteTask}
+                                        onChat={handleTaskChat}
                                         onToggle={toggleTaskComplete}
                                         isEditing={editingTask?.id === task.id}
                                         onUpdate={updateTask}
@@ -527,7 +708,7 @@ const SmartCalendar = () => {
                                 <p className="text-gray-500 dark:text-gray-400 text-center py-8">No tasks for this date</p>
                             ) : (
                                 getTasksForDate(selectedDate).map(task => (
-                                    <TaskCard key={task.id} task={task} onDelete={deleteTask} onToggle={toggleTaskComplete} categories={categories} />
+                                    <TaskCard key={task.id} task={task} onDelete={deleteTask} onToggle={toggleTaskComplete} onChat={handleTaskChat} categories={categories} />
                                 ))
                             )}
                         </div>
@@ -591,7 +772,7 @@ const SmartCalendar = () => {
 };
 
 // Task Queue Item Component with Condensed/Expanded States
-const TaskQueueItem = ({ task, categories, onEdit, onDelete, onToggle, isEditing, onUpdate, onCancelEdit }) => {
+const TaskQueueItem = ({ task, categories, onEdit, onDelete, onToggle, onChat, isEditing, onUpdate, onCancelEdit }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [editForm, setEditForm] = useState(task);
     const category = categories.find(c => c.value === task.category);
@@ -681,17 +862,23 @@ const TaskQueueItem = ({ task, categories, onEdit, onDelete, onToggle, isEditing
                             {task.title}
                         </h4>
                         {isOverdue && <span className="text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded animate-pulse">OVERDUE</span>}
+                        {task.status === 'updated' && !isOverdue && <span className="text-[10px] bg-blue-500 text-white px-1.5 py-0.5 rounded">UPDATED</span>}
+                        {task.status === 'completed' && <span className="text-[10px] bg-green-500 text-white px-1.5 py-0.5 rounded">DONE</span>}
                     </div>
-                    <p className="text-[11px] text-gray-600 dark:text-gray-400 font-medium">
-                        📅 {taskDate.toLocaleDateString()} • <span className="capitalize">{task.category}</span>
-                    </p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-[10px] text-primary font-bold uppercase tracking-tight">{task.crop_name}</p>
+                        <span className="text-[10px] text-gray-400">•</span>
+                        <p className="text-[11px] text-gray-600 dark:text-gray-400 font-medium whitespace-nowrap">
+                            📅 {taskDate.toLocaleDateString()}
+                        </p>
+                    </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                     <button
                         onClick={(e) => { e.stopPropagation(); onToggle(task); }}
                         className={`p-1.5 rounded-full transition-colors ${task.completed
-                                ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
-                                : 'bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+                            ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
+                            : 'bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
                             }`}
                         title={task.completed ? "Mark Incomplete" : "Mark Complete"}
                     >
@@ -712,6 +899,13 @@ const TaskQueueItem = ({ task, categories, onEdit, onDelete, onToggle, isEditing
                         exit={{ height: 0, opacity: 0 }}
                         className="px-3 pb-3 border-t border-gray-100 dark:border-gray-600 pt-3"
                     >
+                        {task.phase && (
+                            <div className="mb-2">
+                                <span className="text-[10px] bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-full font-bold">
+                                    PHASE: {task.phase}
+                                </span>
+                            </div>
+                        )}
                         {task.description && (
                             <div className="mb-3">
                                 <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Work Details</p>
@@ -723,7 +917,7 @@ const TaskQueueItem = ({ task, categories, onEdit, onDelete, onToggle, isEditing
                             <div>
                                 <p className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Priority</p>
                                 <p className={`text-xs font-bold uppercase ${task.priority === 'high' ? 'text-red-600' :
-                                        task.priority === 'medium' ? 'text-amber-600' : 'text-green-600'
+                                    task.priority === 'medium' ? 'text-amber-600' : 'text-green-600'
                                     }`}>
                                     {task.priority}
                                 </p>
@@ -737,6 +931,14 @@ const TaskQueueItem = ({ task, categories, onEdit, onDelete, onToggle, isEditing
                         </div>
 
                         <div className="flex gap-2">
+                            <button
+                                onClick={() => onChat(task)}
+                                className="flex-1 flex items-center justify-center gap-1.5 p-2 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded-lg text-xs font-bold hover:bg-purple-200 dark:hover:bg-purple-800 transition-colors"
+                                title="Chat with AI about this task"
+                            >
+                                <Sparkles className="w-3.5 h-3.5" />
+                                AI Help
+                            </button>
                             <button
                                 onClick={() => onEdit(task)}
                                 className="flex-1 flex items-center justify-center gap-1.5 p-2 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-bold hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
@@ -790,7 +992,7 @@ const Modal = ({ children, onClose, title }) => (
 );
 
 // Task Card Component
-const TaskCard = ({ task, onDelete, onToggle, categories }) => {
+const TaskCard = ({ task, onDelete, onToggle, onChat, categories }) => {
     const category = categories.find(c => c.value === task.category);
 
     return (
@@ -813,6 +1015,13 @@ const TaskCard = ({ task, onDelete, onToggle, categories }) => {
                     </div>
                 </div>
                 <div className="flex gap-2">
+                    <button
+                        onClick={() => onChat(task)}
+                        className="p-2 bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-800 transition-colors"
+                        title="Chat about this task"
+                    >
+                        <Sparkles className="w-4 h-4" />
+                    </button>
                     <button
                         onClick={() => onToggle(task)}
                         className={`p-2 rounded-lg transition-colors ${task.completed

@@ -10,7 +10,7 @@ const Navbar = () => {
     const isActive = (path) => location.pathname === path;
 
     return (
-        <nav className="fixed top-0 left-0 w-full z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-sm dark:shadow-none border-b border-white/0 dark:border-white/5 transition-all duration-300">
+        <nav className="fixed top-0 left-0 w-full z-50 glass transition-all duration-300">
             <div className="container mx-auto px-6 h-20 flex items-center justify-between">
                 <Link to="/" className="flex items-center gap-2 group">
                     <div className="bg-primary p-2 rounded-lg group-hover:bg-primary/90 transition-colors">
@@ -26,6 +26,7 @@ const Navbar = () => {
                     <NavLink to="/crop-recommendation" active={isActive('/crop-recommendation')}>Crop Recommend</NavLink>
                     <NavLink to="/plant-disease" active={isActive('/plant-disease')}>Plant Disease</NavLink>
                     <NavLink to="/soil-testing" active={isActive('/soil-testing')}>Soil Testing</NavLink>
+                    <NavLink to="/smart-calendar" active={isActive('/smart-calendar')}>Smart Calendar</NavLink>
 
                     <button
                         onClick={toggleTheme}

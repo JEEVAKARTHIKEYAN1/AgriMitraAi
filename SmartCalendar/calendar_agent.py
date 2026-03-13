@@ -3,11 +3,11 @@ import os
 import google.generativeai as genai
 import json
 import logging
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 from datetime import datetime, timedelta
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from the project root .env file
+load_dotenv(find_dotenv())
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -30,6 +30,11 @@ class CalendarAgent:
         self.current_key_index = 0
         self.model = None
         self.is_active = False
+        
+        # Load Crop Requirements Data
+        self.crop_data = {}
+        self.yield_patterns = {}
+        self._load_crop_data()
         
         if self.api_keys:
             self._configure_current_key()
@@ -72,11 +77,33 @@ class CalendarAgent:
              logger.error("All API keys failed.")
              self.is_active = False
 
-    def generate_farming_schedule(self, crop, location, planting_date):
+    def _load_crop_data(self):
+        """Loads crop requirements from the JSON file."""
+        try:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            data_file = os.path.join(current_dir, "data", "crop_requirements.json")
+            if os.path.exists(data_file):
+                with open(data_file, 'r') as f:
+                    self.crop_data = json.load(f)
+                logger.info(f"Loaded requirements for {len(self.crop_data)} crops.")
+            else:
+                logger.warning("crop_requirements.json not found.")
+                
+            yield_data_file = os.path.join(current_dir, "data", "crop_yield_patterns.json")
+            if os.path.exists(yield_data_file):
+                with open(yield_data_file, 'r') as f:
+                    self.yield_patterns = json.load(f)
+                logger.info(f"Loaded yield patterns for {len(self.yield_patterns)} states.")
+            else:
+                logger.warning("crop_yield_patterns.json not found.")
+                
+        except Exception as e:
+            logger.error(f"Error loading crop/yield data: {e}")
+
+    def generate_farming_schedule(self, crop, location, planting_date, crop_id=None):
         """
         Generates a comprehensive farming schedule for a specific crop.
-        Returns a structured list of farming tasks with dates and descriptions.
-        All tasks will be scheduled from today onwards (no past dates).
+        This follows the Smart Calendar Orchestrator logic.
         """
         if not self.is_active:
             logger.error("AI Agent is not active. Cannot generate schedule.")
@@ -84,56 +111,68 @@ class CalendarAgent:
 
         # Get today's date for comparison
         today = datetime.now().date()
-        planting_date_obj = datetime.strptime(planting_date, '%Y-%m-%d').date()
+        try:
+            planting_date_obj = datetime.strptime(planting_date, '%Y-%m-%d').date()
+        except ValueError:
+            logger.error(f"Invalid planting date format: {planting_date}")
+            return []
         
         # Calculate the earliest start date (today or planting date, whichever is later)
         earliest_date = max(today, planting_date_obj)
         
+        # Use a default crop_id if none provided
+        target_crop_id = crop_id or f"crop_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+
         prompt = f"""
-You are an expert agricultural advisor for Indian farming.
+You are the Smart Calendar Orchestrator for AgriMitraAI.
+Your job is to generate a professional, independent farming schedule for a specific crop cycle.
 
-IMPORTANT: Today's date is {today.strftime('%Y-%m-%d')}. ALL tasks must be scheduled from TODAY onwards or later. Do NOT generate any tasks with dates in the past.
-
-TASK: Generate a detailed farming schedule for the following:
+SYSTEM OBJECTIVE:
+Generate a full lifecycle plan for:
 - Crop: {crop}
 - Location: {location}
 - Planting Date: {planting_date}
-- Earliest Task Date: {earliest_date.strftime('%Y-%m-%d')} (today or planting date, whichever is later)
+- Crop ID: {target_crop_id}
 
-REQUIREMENTS:
-1. If the planting date is in the future, include land preparation tasks BEFORE planting
-2. If the planting date is today or in the past, start with tasks that should happen NOW (e.g., irrigation, fertilization, pest control)
-3. Include specific tasks for each relevant phase:
-   - Land Preparation (only if planting date is in the future)
-   - Sowing/Planting (if not already done)
-   - Irrigation schedule
-   - Fertilizer application (with NPK details)
-   - Pest and disease management
-   - Weeding
-   - Harvesting
-4. ALL task dates must be >= {earliest_date.strftime('%Y-%m-%d')}
-5. Include brief descriptions for each task
+{f"CROP-SPECIFIC DATA (Ground Truth): {json.dumps(self.crop_data.get(crop.lower(), {}), indent=2)}" if crop.lower() in self.crop_data else ""}
+{f"REGIONAL HISTORICAL PATTERNS ({location}): {json.dumps(self.yield_patterns.get(location, {}).get(crop, {}), indent=2)}" if location in self.yield_patterns and crop in self.yield_patterns.get(location, {}) else ""}
 
-OUTPUT FORMAT (JSON):
-Return ONLY a valid JSON array with this exact structure:
-[
-  {{
-    "title": "Task name",
-    "date": "YYYY-MM-DD",
-    "category": "preparation|planting|irrigation|fertilization|pest_control|weeding|harvesting",
-    "description": "Brief description of the task",
-    "priority": "high|medium|low"
-  }}
-]
+CORE RULES:
+1. DATE VALIDATION:
+- Today's date is {today.strftime('%Y-%m-%d')}. 
+- Do NOT generate past tasks.
+- If the planting date ({planting_date}) is in the past, skip land preparation and start from the current lifecycle stage.
+- All tasks must be >= {earliest_date.strftime('%Y-%m-%d')}.
 
-CRITICAL RULES:
-- Return ONLY the JSON array, no additional text
-- Dates must be in YYYY-MM-DD format
-- ALL dates must be >= {earliest_date.strftime('%Y-%m-%d')} (NO PAST DATES!)
-- Include 15-25 tasks covering the crop cycle from now onwards
-- Tasks should be chronologically ordered
-- Be specific to {crop} cultivation in {location}
-- Adjust the schedule based on whether planting has already occurred or not
+2. SCHEDULE STRUCTURE:
+Generate a plan covering:
+- Land Preparation (if applicable)
+- Sowing / Transplanting
+- Irrigation Schedule
+- Fertilization (with NPK details based on ground truth)
+- Pest & Disease Monitoring
+- Harvesting
+
+3. OUTPUT FORMAT (JSON):
+Return ONLY a valid JSON array. Each task must follow this exact schema:
+{{
+  "task_id": "unique_string",
+  "crop_id": "{target_crop_id}",
+  "crop_name": "{crop}",
+  "phase": "Land Preparation|Sowing|Irrigation|Fertilization|Pest Control|Harvest",
+  "title": "Task name",
+  "description": "Professional description with data-driven advice",
+  "date": "YYYY-MM-DD",
+  "category": "preparation|planting|irrigation|fertilization|pest_control|weeding|harvesting",
+  "priority": "high|medium|low",
+  "status": "pending"
+}}
+
+CRITICAL:
+- Return ONLY the JSON array. No explanations. No markdown.
+- Include 15-25 tasks chronologically.
+- Ensure NPK values in descriptions align with Ground Truth data if provided.
+- Ensure season/yield expectations align with Regional Patterns if provided.
 """
 
         attempts = len(self.api_keys)
@@ -149,7 +188,7 @@ CRITICAL RULES:
                 response = self.model.generate_content(prompt)
                 response_text = response.text.strip()
                 
-                # Extract JSON from response (handle markdown code blocks)
+                # Extract JSON from response (handle markdown code blocks if the AI ignores "no markdown" rule)
                 if "```json" in response_text:
                     response_text = response_text.split("```json")[1].split("```")[0].strip()
                 elif "```" in response_text:
@@ -161,18 +200,23 @@ CRITICAL RULES:
                 # Filter out any tasks with past dates (safety check)
                 filtered_tasks = []
                 for task in tasks:
-                    task_date = datetime.strptime(task['date'], '%Y-%m-%d').date()
-                    if task_date >= today:
-                        filtered_tasks.append(task)
-                    else:
-                        logger.warning(f"Filtered out past task: {task['title']} on {task['date']}")
+                    try:
+                        task_date = datetime.strptime(task['date'], '%Y-%m-%d').date()
+                        if task_date >= today:
+                            # Ensure crop_id and crop_name are consistent
+                            task['crop_id'] = target_crop_id
+                            task['crop_name'] = crop
+                            filtered_tasks.append(task)
+                        else:
+                            logger.warning(f"Filtered out past task: {task.get('title')} on {task.get('date')}")
+                    except (ValueError, KeyError):
+                        continue
                 
-                logger.info(f"Generated {len(filtered_tasks)} future tasks (filtered {len(tasks) - len(filtered_tasks)} past tasks)")
+                logger.info(f"Generated {len(filtered_tasks)} tasks for {crop} (ID: {target_crop_id})")
                 return filtered_tasks
                 
             except json.JSONDecodeError as e:
                 logger.error(f"JSON parsing error: {e}")
-                logger.error(f"Response text: {response_text}")
                 last_error = e
                 self._rotate_key()
             except Exception as e:

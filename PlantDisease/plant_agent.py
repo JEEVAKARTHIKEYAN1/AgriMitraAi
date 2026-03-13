@@ -2,10 +2,10 @@
 import os
 import google.generativeai as genai
 import logging
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from the project root .env file
+load_dotenv(find_dotenv())
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

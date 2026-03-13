@@ -38,10 +38,13 @@ class ScheduleInput(BaseModel):
 
 class TaskInput(BaseModel):
     title: str
-    date: str  # Format: YYYY-MM-DD
-    category: str  # preparation, planting, irrigation, fertilization, pest_control, weeding, harvesting
+    date: str
+    category: str
     description: Optional[str] = ""
-    priority: Optional[str] = "medium"  # high, medium, low
+    priority: Optional[str] = "medium"
+    crop_id: Optional[str] = "manual"
+    crop_name: Optional[str] = "Custom"
+    phase: Optional[str] = "Maintenance"
 
 class TaskUpdate(BaseModel):
     title: Optional[str] = None
@@ -50,6 +53,8 @@ class TaskUpdate(BaseModel):
     description: Optional[str] = None
     priority: Optional[str] = None
     completed: Optional[bool] = None
+    status: Optional[str] = None # pending | completed | updated | deleted
+    phase: Optional[str] = None
 
 class ChatInput(BaseModel):
     message: str
@@ -110,24 +115,31 @@ async def generate_schedule(data: ScheduleInput):
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
         
+        # Create a unique crop_id for this session
+        crop_id = f"crop_{uuid.uuid4().hex[:8]}"
+
         # Generate schedule using AI
-        tasks = agent.generate_farming_schedule(data.crop, data.location, data.planting_date)
+        tasks = agent.generate_farming_schedule(data.crop, data.location, data.planting_date, crop_id=crop_id)
         
         if not tasks:
-            raise HTTPException(status_code=500, detail="Failed to generate schedule. User may need to retry.")
+            raise HTTPException(status_code=500, detail="Failed to generate schedule.")
         
-        # Add tasks to database with unique IDs
+        # Add tasks to database
         new_tasks = []
         for task in tasks:
             task_entry = {
                 'id': str(uuid.uuid4()),
+                'task_id': task.get('task_id', str(uuid.uuid4())),
+                'crop_id': crop_id,
+                'crop_name': data.crop,
+                'phase': task.get('phase', 'General'),
                 'title': task.get('title', 'Untitled Task'),
                 'date': task.get('date', data.planting_date),
                 'category': task.get('category', 'general'),
                 'description': task.get('description', ''),
                 'priority': task.get('priority', 'medium'),
+                'status': task.get('status', 'pending'),
                 'completed': False,
-                'crop': data.crop,
                 'location': data.location
             }
             tasks_db.append(task_entry)
@@ -135,6 +147,7 @@ async def generate_schedule(data: ScheduleInput):
         
         return {
             'message': f'Successfully generated {len(tasks)} tasks for {data.crop}',
+            'crop_id': crop_id,
             'tasks': new_tasks,
             'crop': data.crop,
             'location': data.location
@@ -160,11 +173,16 @@ async def add_task(data: TaskInput):
         
         task_entry = {
             'id': str(uuid.uuid4()),
+            'task_id': f"manual_{uuid.uuid4().hex[:6]}",
+            'crop_id': data.crop_id,
+            'crop_name': data.crop_name,
+            'phase': data.phase,
             'title': data.title,
             'date': data.date,
             'category': data.category,
             'description': data.description,
             'priority': data.priority,
+            'status': 'pending',
             'completed': False
         }
         
@@ -222,7 +240,7 @@ async def get_tasks(start_date: Optional[str] = None, end_date: Optional[str] = 
 @app.put("/update_task/{task_id}")
 async def update_task(task_id: str, data: TaskUpdate):
     """
-    Update a task's details or mark it as complete.
+    Update a task's details with strict consistency rules.
     """
     try:
         # Find task
@@ -231,15 +249,15 @@ async def update_task(task_id: str, data: TaskUpdate):
         if not task:
             raise HTTPException(status_code=404, detail="Task not found")
         
+        today = date.today().strftime('%Y-%m-%d')
+        
         # Update fields
         if data.title is not None:
             task['title'] = data.title
         if data.date is not None:
-            try:
-                datetime.strptime(data.date, '%Y-%m-%d')
-                task['date'] = data.date
-            except ValueError:
-                raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+            if data.date < today:
+                raise HTTPException(status_code=400, detail="Cannot set task date in the past.")
+            task['date'] = data.date
         if data.category is not None:
             task['category'] = data.category
         if data.description is not None:
@@ -248,8 +266,15 @@ async def update_task(task_id: str, data: TaskUpdate):
             task['priority'] = data.priority
         if data.completed is not None:
             task['completed'] = data.completed
-        
-        logger.info(f"Updated task: {task_id}")
+            task['status'] = 'completed' if data.completed else 'pending'
+        if data.phase is not None:
+            task['phase'] = data.phase
+        if data.status is not None:
+             task['status'] = data.status
+        elif not data.completed:
+             task['status'] = 'updated'
+
+        logger.info(f"Updated task {task_id} for crop {task.get('crop_name')}")
         
         return {
             'message': 'Task updated successfully',
@@ -265,27 +290,72 @@ async def update_task(task_id: str, data: TaskUpdate):
 @app.delete("/delete_task/{task_id}")
 async def delete_task(task_id: str):
     """
-    Delete a task from the calendar.
+    Delete a task with lifecycle awareness.
     """
     try:
-        # Find and remove task
         task = next((t for t in tasks_db if t['id'] == task_id), None)
         
         if not task:
             raise HTTPException(status_code=404, detail="Task not found")
         
+        critical_tasks = ['sowing', 'planting', 'transplanting']
+        is_critical = task.get('category', '').lower() in critical_tasks or 'sow' in task.get('title', '').lower()
+        
         tasks_db.remove(task)
-        logger.info(f"Deleted task: {task_id}")
+        logger.info(f"Deleted task {task_id} ({task.get('title')})")
         
         return {
             'message': 'Task deleted successfully',
-            'task_id': task_id
+            'task_id': task_id,
+            'is_critical': is_critical,
+            'crop_id': task.get('crop_id'),
+            'warning': "Critical task deleted. Crop lifecycle may be inconsistent." if is_critical else None
         }
         
     except HTTPException:
         raise
+@app.delete("/delete_crop/{crop_id}")
+async def delete_crop(crop_id: str):
+    """
+    Delete all tasks associated with a specific crop ID.
+    """
+    try:
+        global tasks_db
+        initial_count = len(tasks_db)
+        tasks_db = [t for t in tasks_db if t.get('crop_id') != crop_id]
+        deleted_count = initial_count - len(tasks_db)
+        
+        logger.info(f"Deleted crop {crop_id}: {deleted_count} tasks removed")
+        
+        return {
+            'message': f'Successfully deleted crop cycle and {deleted_count} tasks',
+            'crop_id': crop_id,
+            'deleted_tasks': deleted_count
+        }
     except Exception as e:
-        logger.error(f"Delete Task Error: {e}")
+        logger.error(f"Delete Crop Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/rename_crop/{crop_id}")
+async def rename_crop(crop_id: str, new_name: str):
+    """
+    Rename all occurrences of a crop name for a specific crop ID.
+    """
+    try:
+        updated_count = 0
+        for task in tasks_db:
+            if task.get('crop_id') == crop_id:
+                task['crop_name'] = new_name
+                updated_count += 1
+        
+        logger.info(f"Renamed crop {crop_id} to {new_name}: {updated_count} tasks updated")
+        
+        return {
+            'message': f'Successfully renamed crop to {new_name}',
+            'updated_tasks': updated_count
+        }
+    except Exception as e:
+        logger.error(f"Rename Crop Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/chat")

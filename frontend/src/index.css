@@ -3,26 +3,110 @@
 @tailwind utilities;
 
 @layer base {
-  body {
-    @apply bg-background text-gray-800 font-sans antialiased;
-  }
+    :root {
+        --primary: 125 27% 25%;
+        /* #2F5233 */
+        --secondary: 97 45% 62%;
+        /* #94C973 */
+        --accent: 52 98% 48%;
+        /* #F1D302 */
+        --background: 154 30% 96%;
+        /* #F0F7F4 */
 
-  /* Custom Scrollbar */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
+        --glass-bg: rgba(255, 255, 255, 0.7);
+        --glass-border: rgba(255, 255, 255, 0.5);
+        --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+    }
 
-  ::-webkit-scrollbar-track {
-    @apply bg-transparent;
-  }
+    .dark {
+        --glass-bg: rgba(17, 24, 39, 0.7);
+        --glass-border: rgba(255, 255, 255, 0.1);
+        --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    }
 
-  ::-webkit-scrollbar-thumb {
-    @apply bg-gray-300 dark:bg-gray-700 rounded-full hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors;
-  }
+    body {
+        @apply bg-background text-gray-800 font-sans antialiased selection:bg-primary/20 selection:text-primary transition-colors duration-500;
+        font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    }
 
-  /* Selection Highlight */
-  ::selection {
-    @apply bg-primary/20 text-primary dark:bg-primary/40 dark:text-white;
-  }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+        @apply bg-transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        @apply bg-gray-300 dark:bg-gray-700 rounded-full hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors;
+    }
+}
+
+@layer components {
+    .glass {
+        background: var(--glass-bg);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--glass-border);
+        box-shadow: var(--glass-shadow);
+    }
+
+    .btn-primary {
+        @apply px-6 py-3 bg-primary text-white rounded-xl font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:scale-95 transition-all duration-300;
+    }
+
+    .input-field {
+        @apply w-full px-4 py-3 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all;
+    }
+}
+
+@layer utilities {
+    .text-balance {
+        text-wrap: balance;
+    }
+
+    .bg-grid {
+        background-size: 40px 40px;
+        background-image:
+            linear-gradient(to right, currentColor 1px, transparent 1px),
+            linear-gradient(to bottom, currentColor 1px, transparent 1px);
+    }
+
+    .noise {
+        background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+        filter: contrast(150%) brightness(100%);
+    }
+}
+
+/* Animations */
+@keyframes shimmer {
+    from {
+        transform: translateX(-100%);
+    }
+
+    to {
+        transform: translateX(100%);
+    }
+}
+
+.animate-shimmer {
+    animation: shimmer 2s infinite;
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.animate-float {
+    animation: float 6s ease-in-out infinite;
 }

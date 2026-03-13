@@ -1,0 +1,288 @@
+{
+    "apple": {
+        "npk": {
+            "Nitrogen": 20.8,
+            "Phosphorous": 134.22,
+            "Potassium": 199.89
+        },
+        "environment": {
+            "Temperature_range": "21.0-24.0\u00b0C",
+            "Humidity_range": "90.0-94.9%",
+            "pH_range": "5.5-6.5",
+            "Rainfall_ideal": "112.7mm"
+        }
+    },
+    "banana": {
+        "npk": {
+            "Nitrogen": 100.23,
+            "Phosphorous": 82.01,
+            "Potassium": 50.05
+        },
+        "environment": {
+            "Temperature_range": "25.0-29.9\u00b0C",
+            "Humidity_range": "75.0-85.0%",
+            "pH_range": "5.5-6.5",
+            "Rainfall_ideal": "104.6mm"
+        }
+    },
+    "blackgram": {
+        "npk": {
+            "Nitrogen": 40.02,
+            "Phosphorous": 67.47,
+            "Potassium": 19.24
+        },
+        "environment": {
+            "Temperature_range": "25.1-34.9\u00b0C",
+            "Humidity_range": "60.1-70.0%",
+            "pH_range": "6.5-7.8",
+            "Rainfall_ideal": "67.9mm"
+        }
+    },
+    "chickpea": {
+        "npk": {
+            "Nitrogen": 40.09,
+            "Phosphorous": 67.79,
+            "Potassium": 79.92
+        },
+        "environment": {
+            "Temperature_range": "17.0-21.0\u00b0C",
+            "Humidity_range": "14.3-20.0%",
+            "pH_range": "6.0-8.9",
+            "Rainfall_ideal": "80.1mm"
+        }
+    },
+    "coconut": {
+        "npk": {
+            "Nitrogen": 21.98,
+            "Phosphorous": 16.93,
+            "Potassium": 30.59
+        },
+        "environment": {
+            "Temperature_range": "25.0-29.9\u00b0C",
+            "Humidity_range": "90.0-100.0%",
+            "pH_range": "5.5-6.5",
+            "Rainfall_ideal": "175.7mm"
+        }
+    },
+    "coffee": {
+        "npk": {
+            "Nitrogen": 101.2,
+            "Phosphorous": 28.74,
+            "Potassium": 29.94
+        },
+        "environment": {
+            "Temperature_range": "23.1-27.9\u00b0C",
+            "Humidity_range": "50.0-69.9%",
+            "pH_range": "6.0-7.5",
+            "Rainfall_ideal": "158.1mm"
+        }
+    },
+    "cotton": {
+        "npk": {
+            "Nitrogen": 117.77,
+            "Phosphorous": 46.24,
+            "Potassium": 19.56
+        },
+        "environment": {
+            "Temperature_range": "22.0-26.0\u00b0C",
+            "Humidity_range": "75.0-84.9%",
+            "pH_range": "5.8-8.0",
+            "Rainfall_ideal": "80.4mm"
+        }
+    },
+    "grapes": {
+        "npk": {
+            "Nitrogen": 23.18,
+            "Phosphorous": 132.53,
+            "Potassium": 200.11
+        },
+        "environment": {
+            "Temperature_range": "8.8-41.9\u00b0C",
+            "Humidity_range": "80.0-84.0%",
+            "pH_range": "5.5-6.5",
+            "Rainfall_ideal": "69.6mm"
+        }
+    },
+    "jute": {
+        "npk": {
+            "Nitrogen": 78.4,
+            "Phosphorous": 46.86,
+            "Potassium": 39.99
+        },
+        "environment": {
+            "Temperature_range": "23.1-27.0\u00b0C",
+            "Humidity_range": "70.9-89.9%",
+            "pH_range": "6.0-7.5",
+            "Rainfall_ideal": "174.8mm"
+        }
+    },
+    "kidneybeans": {
+        "npk": {
+            "Nitrogen": 20.75,
+            "Phosphorous": 67.54,
+            "Potassium": 20.05
+        },
+        "environment": {
+            "Temperature_range": "15.3-24.9\u00b0C",
+            "Humidity_range": "18.1-25.0%",
+            "pH_range": "5.5-6.0",
+            "Rainfall_ideal": "105.9mm"
+        }
+    },
+    "lentil": {
+        "npk": {
+            "Nitrogen": 18.77,
+            "Phosphorous": 68.36,
+            "Potassium": 19.41
+        },
+        "environment": {
+            "Temperature_range": "18.1-29.9\u00b0C",
+            "Humidity_range": "60.1-69.9%",
+            "pH_range": "5.9-7.8",
+            "Rainfall_ideal": "45.7mm"
+        }
+    },
+    "maize": {
+        "npk": {
+            "Nitrogen": 77.76,
+            "Phosphorous": 48.44,
+            "Potassium": 19.79
+        },
+        "environment": {
+            "Temperature_range": "18.0-26.5\u00b0C",
+            "Humidity_range": "55.3-74.8%",
+            "pH_range": "5.5-7.0",
+            "Rainfall_ideal": "84.8mm"
+        }
+    },
+    "mango": {
+        "npk": {
+            "Nitrogen": 20.07,
+            "Phosphorous": 27.18,
+            "Potassium": 29.92
+        },
+        "environment": {
+            "Temperature_range": "27.0-36.0\u00b0C",
+            "Humidity_range": "45.0-55.0%",
+            "pH_range": "4.5-7.0",
+            "Rainfall_ideal": "94.7mm"
+        }
+    },
+    "mothbeans": {
+        "npk": {
+            "Nitrogen": 21.44,
+            "Phosphorous": 48.01,
+            "Potassium": 20.23
+        },
+        "environment": {
+            "Temperature_range": "24.0-32.0\u00b0C",
+            "Humidity_range": "40.0-65.0%",
+            "pH_range": "3.5-9.9",
+            "Rainfall_ideal": "51.2mm"
+        }
+    },
+    "mungbean": {
+        "npk": {
+            "Nitrogen": 20.99,
+            "Phosphorous": 47.28,
+            "Potassium": 19.87
+        },
+        "environment": {
+            "Temperature_range": "27.0-29.9\u00b0C",
+            "Humidity_range": "80.0-90.0%",
+            "pH_range": "6.2-7.2",
+            "Rainfall_ideal": "48.4mm"
+        }
+    },
+    "muskmelon": {
+        "npk": {
+            "Nitrogen": 100.32,
+            "Phosphorous": 17.72,
+            "Potassium": 50.08
+        },
+        "environment": {
+            "Temperature_range": "27.0-29.9\u00b0C",
+            "Humidity_range": "90.0-95.0%",
+            "pH_range": "6.0-6.8",
+            "Rainfall_ideal": "24.7mm"
+        }
+    },
+    "orange": {
+        "npk": {
+            "Nitrogen": 19.58,
+            "Phosphorous": 16.55,
+            "Potassium": 10.01
+        },
+        "environment": {
+            "Temperature_range": "10.0-34.9\u00b0C",
+            "Humidity_range": "90.0-95.0%",
+            "pH_range": "6.0-8.0",
+            "Rainfall_ideal": "110.5mm"
+        }
+    },
+    "papaya": {
+        "npk": {
+            "Nitrogen": 49.88,
+            "Phosphorous": 59.05,
+            "Potassium": 50.04
+        },
+        "environment": {
+            "Temperature_range": "23.0-43.7\u00b0C",
+            "Humidity_range": "90.0-94.9%",
+            "pH_range": "6.5-7.0",
+            "Rainfall_ideal": "142.6mm"
+        }
+    },
+    "pigeonpeas": {
+        "npk": {
+            "Nitrogen": 20.73,
+            "Phosphorous": 67.73,
+            "Potassium": 20.29
+        },
+        "environment": {
+            "Temperature_range": "18.3-37.0\u00b0C",
+            "Humidity_range": "30.4-69.7%",
+            "pH_range": "4.5-7.4",
+            "Rainfall_ideal": "149.5mm"
+        }
+    },
+    "pomegranate": {
+        "npk": {
+            "Nitrogen": 18.87,
+            "Phosphorous": 18.75,
+            "Potassium": 40.21
+        },
+        "environment": {
+            "Temperature_range": "18.1-25.0\u00b0C",
+            "Humidity_range": "85.1-95.0%",
+            "pH_range": "5.6-7.2",
+            "Rainfall_ideal": "107.5mm"
+        }
+    },
+    "rice": {
+        "npk": {
+            "Nitrogen": 79.89,
+            "Phosphorous": 47.58,
+            "Potassium": 39.87
+        },
+        "environment": {
+            "Temperature_range": "20.0-26.9\u00b0C",
+            "Humidity_range": "80.1-85.0%",
+            "pH_range": "5.0-7.9",
+            "Rainfall_ideal": "236.2mm"
+        }
+    },
+    "watermelon": {
+        "npk": {
+            "Nitrogen": 99.42,
+            "Phosphorous": 17.0,
+            "Potassium": 50.22
+        },
+        "environment": {
+            "Temperature_range": "24.0-27.0\u00b0C",
+            "Humidity_range": "80.0-90.0%",
+            "pH_range": "6.0-7.0",
+            "Rainfall_ideal": "50.8mm"
+        }
+    }
+}
