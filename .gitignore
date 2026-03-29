@@ -48,3 +48,7 @@ PlantDisease/vit-plant-disease-final/
 *.zip
 *.h5
 *.pth
+
+# Runtime / generated data files
+SmartCalendar/tasks.json
+SmartCalendar/tasks.json.tmp

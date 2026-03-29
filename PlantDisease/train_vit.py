@@ -1,11 +1,15 @@
 import os
 import torch
-from torch.utils.data import Dataset
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from torch.utils.data import Dataset, DataLoader
 from torchvision import datasets, transforms
 from transformers import ViTForImageClassification, ViTImageProcessor
 from transformers import TrainingArguments, Trainer
 import evaluate
 from PIL import Image
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 
 os.environ["WANDB_DISABLED"] = "true"
 
@@ -29,7 +33,14 @@ val_ds = datasets.ImageFolder(val_dir)
 test_ds = datasets.ImageFolder(test_dir)
 
 num_labels = len(train_ds.classes)
+
+# -----------------------------
+# DATASET STATISTICS
+# -----------------------------
 print("Number of classes:", num_labels)
+print(f"Train size: {len(train_ds)}")
+print(f"Validation size: {len(val_ds)}")
+print(f"Test size: {len(test_ds)}")
 
 # -----------------------------
 # IMAGE PROCESSOR
@@ -96,7 +107,7 @@ training_args = TrainingArguments(
     learning_rate=3e-5,
     per_device_train_batch_size=8,
     per_device_eval_batch_size=8,
-    num_train_epochs=15,        # ⬅️ Increased for accuracy
+    num_train_epochs=15,
     weight_decay=0.05,
     logging_steps=50,
     load_best_model_at_end=True,
@@ -137,3 +148,53 @@ trainer.save_model("/content/drive/MyDrive/vit-plant-disease-final")
 processor.save_pretrained("/content/drive/MyDrive/vit-plant-disease-final")
 
 print("Training complete!")
+
+# -----------------------------
+# TEST EVALUATION
+# -----------------------------
+print("Starting Test Evaluation...")
+test_loader = DataLoader(test_dataset, batch_size=8, shuffle=False)
+
+model.eval()
+all_preds = []
+all_labels = []
+
+print("Running inference on test dataset...")
+with torch.no_grad():
+    for batch in test_loader:
+        pixel_values = batch["pixel_values"].to(device)
+        labels = batch["labels"].to(device)
+        
+        outputs = model(pixel_values=pixel_values)
+        logits = outputs.logits
+        preds = logits.argmax(-1)
+        
+        all_preds.extend(preds.cpu().numpy())
+        all_labels.extend(labels.cpu().numpy())
+
+test_acc = accuracy_score(all_labels, all_preds)
+print(f"Test Accuracy: {test_acc:.4f}")
+
+print("\nClassification Report:")
+print(classification_report(all_labels, all_preds, target_names=train_ds.classes))
+
+# -----------------------------
+# CONFUSION MATRIX
+# -----------------------------
+print("Generating Confusion Matrix...")
+cm = confusion_matrix(all_labels, all_preds)
+
+plt.figure(figsize=(12, 10))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+            xticklabels=train_ds.classes, yticklabels=train_ds.classes)
+
+plt.xlabel("Predicted Labels")
+plt.ylabel("True Labels")
+plt.title("Test Confusion Matrix")
+plt.tight_layout()
+
+cm_filename = "vit_confusion_matrix.png"
+plt.savefig(cm_filename)
+plt.close()
+
+print(f"Confusion matrix saved as '{cm_filename}'")

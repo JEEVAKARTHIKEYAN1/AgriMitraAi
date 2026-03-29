@@ -25,6 +25,7 @@ const SmartCalendar = () => {
 
     const [scheduleForm, setScheduleForm] = useState({
         crop: '',
+        soil_fertility: '',
         location: '',
         planting_date: ''
     });
@@ -97,8 +98,8 @@ const SmartCalendar = () => {
     };
 
     const generateSchedule = async () => {
-        if (!scheduleForm.crop || !scheduleForm.location || !scheduleForm.planting_date) {
-            alert('Please fill all fields');
+        if (!scheduleForm.crop || !scheduleForm.soil_fertility || !scheduleForm.location || !scheduleForm.planting_date) {
+            alert('Please fill all fields including Soil Fertility');
             return;
         }
 
@@ -115,7 +116,7 @@ const SmartCalendar = () => {
             if (response.ok) {
                 await fetchTasks();
                 setShowScheduleGen(false);
-                setScheduleForm({ crop: '', location: '', planting_date: '' });
+                setScheduleForm({ crop: '', soil_fertility: '', location: '', planting_date: '' });
                 setSelectedCropId(data.crop_id);
                 alert(`Successfully generated ${data.tasks.length} tasks for ${data.crop}!`);
             } else {
@@ -598,9 +599,22 @@ What would you like to know about this specific activity?`;
                                     type="text"
                                     value={scheduleForm.crop}
                                     onChange={(e) => setScheduleForm({ ...scheduleForm, crop: e.target.value })}
-                                    placeholder="e.g., Rice, Wheat, Cotton"
+                                    placeholder="e.g., rice, wheat, cotton"
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                 />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold mb-2">Soil Fertility <span className="text-xs text-gray-400 font-normal">(from Soil Testing module)</span></label>
+                                <select
+                                    value={scheduleForm.soil_fertility}
+                                    onChange={(e) => setScheduleForm({ ...scheduleForm, soil_fertility: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                >
+                                    <option value="">-- Select Soil Fertility --</option>
+                                    <option value="Low">Low</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="High">High</option>
+                                </select>
                             </div>
                             <div>
                                 <label className="block text-sm font-semibold mb-2">Location</label>

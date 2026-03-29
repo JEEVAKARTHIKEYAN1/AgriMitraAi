@@ -6,7 +6,7 @@ const SoilTesting = () => {
     const [formData, setFormData] = useState({
         N: '', P: '', K: '', pH: '', EC: '', OC: '', S: '',
         Zn: '', Fe: '', Cu: '', Mn: '', B: '',
-        Moisture: '', Annual_Rainfall: '', Temperature: ''
+        Moisture: '', soil_type: ''
     });
 
     const [result, setResult] = useState(null);
@@ -48,8 +48,7 @@ const SoilTesting = () => {
                 Mn: safeFloat(formData.Mn),
                 B: safeFloat(formData.B),
                 Moisture: safeFloat(formData.Moisture),
-                Annual_Rainfall: safeFloat(formData.Annual_Rainfall),
-                Temperature: safeFloat(formData.Temperature),
+                soil_type: formData.soil_type || 'Unknown',
             };
 
             const response = await fetch('http://localhost:5002/predict_soil', {
@@ -131,22 +130,40 @@ const SoilTesting = () => {
                                     ))}
                                 </div>
 
-                                {/* Environmental Grid */}
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-gray-100 dark:border-gray-700 pt-6">
-                                    {['Moisture', 'Annual_Rainfall', 'Temperature'].map((field) => (
-                                        <div key={field}>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{field.replace('_', ' ')}</label>
-                                            <input
-                                                type="number"
-                                                step="any"
-                                                name={field}
-                                                value={formData[field]}
-                                                onChange={handleChange}
-                                                required
-                                                className="w-full px-4 py-3 bg-white dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary dark:focus:border-primary outline-none transition-all text-gray-900 dark:text-gray-100 placeholder-gray-400"
-                                            />
-                                        </div>
-                                    ))}
+                                {/* Moisture + Soil Type */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-gray-100 dark:border-gray-700 pt-6">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Moisture (%)</label>
+                                        <input
+                                            type="number"
+                                            step="any"
+                                            name="Moisture"
+                                            value={formData.Moisture}
+                                            onChange={handleChange}
+                                            required
+                                            className="w-full px-4 py-3 bg-white dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary dark:focus:border-primary outline-none transition-all text-gray-900 dark:text-gray-100 placeholder-gray-400"
+                                            placeholder="0.0"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Soil Type</label>
+                                        <select
+                                            name="soil_type"
+                                            value={formData.soil_type}
+                                            onChange={handleChange}
+                                            required
+                                            className="w-full px-4 py-3 bg-white dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary dark:focus:border-primary outline-none transition-all text-gray-900 dark:text-gray-100"
+                                        >
+                                            <option value="">Select Soil Type</option>
+                                            <option value="Red">Red</option>
+                                            <option value="Sandy">Sandy</option>
+                                            <option value="Clay Loam">Clay Loam</option>
+                                            <option value="Black">Black</option>
+                                            <option value="Alluvial">Alluvial</option>
+                                            <option value="Loamy">Loamy</option>
+                                            <option value="Unknown">Unknown / Other</option>
+                                        </select>
+                                    </div>
                                 </div>
 
                                 <motion.button

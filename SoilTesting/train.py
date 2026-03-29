@@ -1,6 +1,7 @@
 import pandas as pd
 import joblib
-from sklearn.model_selection import train_test_split
+import numpy as np
+from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, classification_report
@@ -12,46 +13,68 @@ df = pd.read_csv(DATA_PATH)
 print("Dataset Loaded Successfully!")
 
 # 2. Define Features and Targets
-# Inputs available from user
 feature_cols = [
     'N', 'P', 'K', 'pH', 'EC', 'OC', 'S', 'Zn', 'Fe', 'Cu', 'Mn', 'B',
-    'Moisture', 'Annual_Rainfall', 'Temperature'
+    'Moisture'
 ]
 
 X = df[feature_cols]
 y_output = df['Output']        # Target 1
-y_soil_type = df['Soil_Type']  # Target 2
 
 print(f"Features: {feature_cols}")
 
-# 3. Preprocessing (Scaling)
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
+# Compute Medians for Imputation in Production (from raw features, before scaling)
+medians = X.median().to_dict()
 
-# 4. Train Model 1: Crop/Output Prediction
+# 3. Train/Test Split (BEFORE scaling to prevent data leakage)
+X_train_raw, X_test_raw, y_train_out, y_test_out = train_test_split(X, y_output, test_size=0.2, random_state=42)
+
+# 4. Preprocessing (Scaling: fit ONLY on train, transform both)
+scaler = StandardScaler()
+X_train_out = scaler.fit_transform(X_train_raw)
+X_test_out = scaler.transform(X_test_raw)
+
+# 5. Train Model
 print("\nTraining Output Model...")
-X_train_out, X_test_out, y_train_out, y_test_out = train_test_split(X_scaled, y_output, test_size=0.2, random_state=42)
-model_output = RandomForestClassifier(n_estimators=100, random_state=42)
+model_output = RandomForestClassifier(
+    n_estimators=100,
+    max_depth=10,
+    min_samples_split=5,
+    random_state=42
+)
+
+# Cross-Validation
+cv_scores = cross_val_score(model_output, X_train_out, y_train_out, cv=5)
+print(f"5-Fold CV Accuracy: {cv_scores.mean():.4f} (+/- {cv_scores.std():.4f})")
+
 model_output.fit(X_train_out, y_train_out)
 
-y_pred_out = model_output.predict(X_test_out)
-print(f"Output Model Accuracy: {accuracy_score(y_test_out, y_pred_out)}")
+# 6. Evaluation
+y_train_pred = model_output.predict(X_train_out)
+y_test_pred = model_output.predict(X_test_out)
 
-# 5. Train Model 2: Soil Type Prediction
-print("\nTraining Soil Type Model...")
-X_train_type, X_test_type, y_train_type, y_test_type = train_test_split(X_scaled, y_soil_type, test_size=0.2, random_state=42)
-model_type = RandomForestClassifier(n_estimators=100, random_state=42)
-model_type.fit(X_train_type, y_train_type)
+print("\n--- Evaluation ---")
+print(f"Train Accuracy: {accuracy_score(y_train_out, y_train_pred):.4f}")
+print(f"Test Accuracy: {accuracy_score(y_test_out, y_test_pred):.4f}")
 
-y_pred_type = model_type.predict(X_test_type)
-print(f"Soil Type Model Accuracy: {accuracy_score(y_test_type, y_pred_type)}")
-print(classification_report(y_test_type, y_pred_type))
+print("\nClassification Report (Test):")
+print(classification_report(y_test_out, y_test_pred))
 
-# 6. Save Artifacts
+# 7. Feature Importance
+print("\n--- Feature Importance ---")
+importances = model_output.feature_importances_
+importance_df = pd.DataFrame({
+    'Feature': feature_cols,
+    'Importance': importances
+}).sort_values(by='Importance', ascending=False)
+
+print(importance_df.to_string(index=False))
+
+# 8. Save Artifacts
 SAVE_DIR = r"E:\SRI PROJECT\AgriMitraAI\SoilTesting"
 joblib.dump(model_output, f"{SAVE_DIR}\\soil_model.pkl")       # Main Output Model
-joblib.dump(model_type, f"{SAVE_DIR}\\type_model.pkl")         # Soil Type Model
 joblib.dump(scaler, f"{SAVE_DIR}\\scaler.pkl")                 # Scaler
 joblib.dump(feature_cols, f"{SAVE_DIR}\\model_columns.pkl")    # Columns list
+joblib.dump(medians, f"{SAVE_DIR}\\medians.pkl")                # Medians for Imputation
 
 print("\nAll models and artifacts saved successfully!")
